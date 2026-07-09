@@ -112,7 +112,7 @@ _js = """
 </script>
 """ % json.dumps(_menu_map, ensure_ascii=False)
 
-st.html(_js)
+st.html(_js, unsafe_allow_javascript=True)
 
 
 def main():

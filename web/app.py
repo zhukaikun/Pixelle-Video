@@ -48,7 +48,7 @@ st.set_page_config(
     },
 )
 
-# Hide Deploy button + GitHub icon links in dialogs/version info
+# Hide Deploy button + GitHub/Streamlit links in version info, about dialog, and header
 st.markdown("""
     <style>
     [data-testid="stDeployButton"],
@@ -59,10 +59,13 @@ st.markdown("""
     a[href*="streamlit.io/cloud"] {
         display: none !important;
     }
-    [data-testid="stVersionInfo"] a[href*="github.com"],
-    [data-testid="stVersionInfo"] a[href*="streamlit.io"],
-    [data-testid="stAboutDialog"] a[href*="github.com"],
-    [data-testid="stAboutDialog"] a[href*="streamlit.io"] {
+    [data-testid="stVersionInfo"] a,
+    [data-testid="stVersionInfo"] img,
+    [data-testid="stAboutDialog"] a,
+    [data-testid="stAboutDialog"] img,
+    [data-testid="stHeaderLogo"],
+    [data-testid="stMainMenu"] a[href*="github.com"],
+    [data-testid="stMainMenu"] a[href*="streamlit.io"] {
         display: none !important;
     }
     </style>

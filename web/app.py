@@ -70,12 +70,10 @@ _menu_map = {
     "Print": "打印" if _zh else "Print",
     "About": "关于" if _zh else "About",
     "Get help": "获取帮助" if _zh else "Get help",
-    "Report a Bug": "报告问题" if _zh else "Report a Bug",
     "Report a bug": "报告问题" if _zh else "Report a bug",
-    "Reload": "重新加载" if _zh else "Reload",
-    "Fullscreen": "全屏" if _zh else "Fullscreen",
+    "Rerun": "重新运行" if _zh else "Rerun",
     "Record a screencast": "录制屏幕" if _zh else "Record a screencast",
-    "Deploy": "部署" if _zh else "Deploy",
+    "Developer options": "开发者选项" if _zh else "Developer options",
 }
 
 _js = """
@@ -84,34 +82,28 @@ _js = """
     const translations = %s;
 
     function translateMenu() {
-        const selectors = [
-            '[data-testid="stMainMenu"] [role="menuitem"]',
-            '[data-testid="stMainMenu"] a',
-            '[data-testid="stMainMenu"] button',
-            '[data-baseweb="menu"] [role="menuitem"]',
-            '[data-baseweb="menu"] li',
-            'header [role="menuitem"]',
-            'header a[role="menuitem"]',
-            'div[role="menu"] a',
-            'div[role="menu"] button',
-            'div[role="menu"] li',
-            'ul[role="menu"] a',
-            'ul[role="menu"] li',
-            'li[role="menuitem"]',
-        ];
-        const items = document.querySelectorAll(selectors.join(', '));
-        items.forEach(item => {
-            const text = item.textContent.trim();
+        // Walk all text nodes in the document
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        const toUpdate = [];
+        let node;
+        while (node = walker.nextNode()) {
+            const text = node.textContent.trim();
             if (translations[text]) {
-                item.textContent = translations[text];
+                toUpdate.push({node, value: translations[text]});
             }
+        }
+        toUpdate.forEach(({node, value}) => {
+            node.textContent = value;
         });
     }
 
-    // Run immediately
     translateMenu();
 
-    // Re-run periodically to catch menu when it opens
     const observer = new MutationObserver(() => {
         translateMenu();
     });

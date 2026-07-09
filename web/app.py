@@ -45,12 +45,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
     menu_items={
         "About": "Pixelle-Video - AI 视频生成器" if _zh else "Pixelle-Video - AI Video Generator",
-        "Get Help": "https://github.com/ATH-MaaS/Pixelle-Video/issues",
-        "Report a Bug": "https://github.com/ATH-MaaS/Pixelle-Video/issues",
     },
 )
 
-# Hide Deploy button
+# Hide Deploy button + GitHub icon links in dialogs/version info
 st.markdown("""
     <style>
     [data-testid="stDeployButton"],
@@ -61,30 +59,73 @@ st.markdown("""
     a[href*="streamlit.io/cloud"] {
         display: none !important;
     }
+    [data-testid="stVersionInfo"] a[href*="github.com"],
+    [data-testid="stVersionInfo"] a[href*="streamlit.io"],
+    [data-testid="stAboutDialog"] a[href*="github.com"],
+    [data-testid="stAboutDialog"] a[href*="streamlit.io"] {
+        display: none !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# Translate built-in three-dot menu items via JS
-_menu_map = {
-    "Settings": "设置" if _zh else "Settings",
-    "Print": "打印" if _zh else "Print",
-    "About": "关于" if _zh else "About",
-    "Get help": "获取帮助" if _zh else "Get help",
-    "Report a bug": "报告问题" if _zh else "Report a bug",
-    "Rerun": "重新运行" if _zh else "Rerun",
-    "Record a screencast": "录制屏幕" if _zh else "Record a screencast",
-    "Clear cache": "清除缓存" if _zh else "Clear cache",
-    "Clear caches": "清除缓存" if _zh else "Clear caches",
-    "Developer options": "开发者选项" if _zh else "Developer options",
-}
+# Comprehensive translation map for menu items and dialog texts
+if _zh:
+    _menu_map = {
+        # Menu items
+        "Settings": "设置",
+        "Print": "打印",
+        "About": "关于",
+        "Rerun": "重新运行",
+        "Record a screencast": "录制屏幕",
+        "Clear cache": "清除缓存",
+        "Clear caches": "清除缓存",
+        "Developer options": "开发者选项",
+        "Development": "开发选项",
+        # Settings dialog
+        "Run on save": "保存时自动运行",
+        "Automatically updates the app when the underlying code is updated.": "当底层代码更新时自动刷新应用。",
+        "Appearance": "外观",
+        "Wide mode": "宽屏模式",
+        "Turn on to make this app occupy the entire width of the screen.": "开启后应用将占据整个屏幕宽度。",
+        "Choose app theme": "选择应用主题",
+        # Clear cache dialog
+        "Are you sure you want to clear the app's function caches?": "确定要清除应用的函数缓存吗？",
+        "This will remove all cached entries from functions using": "这将移除以下函数的所有缓存数据：",
+        "Cancel": "取消",
+        # Screencast dialog
+        "Cancel screencast": "取消录制",
+        "Start recording!": "开始录制！",
+        "Stop recording": "停止录制",
+        "Also record audio": "同时录制音频",
+        "This will record a video with the contents of your screen, so you can easily share what you're seeing with others.": "此功能将录制屏幕内容视频，方便您与他人分享所见内容。",
+        "Press `Esc` any time to stop recording.": "随时按 `Esc` 键停止录制。",
+        "Preview your video below:": "在下方预览您的视频：",
+        "Save video to disk": "保存视频到本地",
+        "WebM format": "WebM 格式",
+        "This video is encoded in the": "此视频编码格式为",
+        # About dialog
+        "About": "关于",
+        # Script error dialog
+        "Script execution error": "脚本执行错误",
+        "Try again": "重试",
+        "Close": "关闭",
+        "Copy": "复制",
+        # Other
+        "Connecting to Streamlit server": "正在连接 Streamlit 服务器",
+        "Connection error": "连接错误",
+        "Reconnected to server.": "已重新连接到服务器。",
+    }
+else:
+    _menu_map = {}
 
 _js = """
 <script>
 (function() {
     const translations = %s;
-    const doc = window.parent.document || document;
 
-    function translateMenu() {
+    function translateText() {
+        if (Object.keys(translations).length === 0) return;
+        const doc = window.parent.document || document;
         const walker = doc.createTreeWalker(
             doc.body,
             NodeFilter.SHOW_TEXT,
@@ -96,7 +137,7 @@ _js = """
         while (node = walker.nextNode()) {
             const text = node.textContent.trim();
             if (translations[text]) {
-                toUpdate.push({node, value: translations[text]});
+                toUpdate.push({node: node, value: translations[text]});
             }
         }
         toUpdate.forEach(function(item) {
@@ -104,10 +145,12 @@ _js = """
         });
     }
 
-    translateMenu();
+    translateText();
 
-    const observer = new doc.defaultView.MutationObserver(function() {
-        translateMenu();
+    const doc = window.parent.document || document;
+    const MutationObserverCtor = doc.defaultView.MutationObserver || window.MutationObserver;
+    const observer = new MutationObserverCtor(function() {
+        translateText();
     });
     observer.observe(doc.body, { childList: true, subtree: true, characterData: true });
 })();

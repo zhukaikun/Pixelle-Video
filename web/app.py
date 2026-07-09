@@ -84,7 +84,6 @@ _js = """
     const translations = %s;
 
     function translateMenu() {
-        // Target all menu items in dropdowns
         const selectors = [
             '[data-testid="stMainMenu"] [role="menuitem"]',
             '[data-testid="stMainMenu"] a',
@@ -93,6 +92,12 @@ _js = """
             '[data-baseweb="menu"] li',
             'header [role="menuitem"]',
             'header a[role="menuitem"]',
+            'div[role="menu"] a',
+            'div[role="menu"] button',
+            'div[role="menu"] li',
+            'ul[role="menu"] a',
+            'ul[role="menu"] li',
+            'li[role="menuitem"]',
         ];
         const items = document.querySelectorAll(selectors.join(', '));
         items.forEach(item => {
@@ -103,18 +108,19 @@ _js = """
         });
     }
 
+    // Run immediately
     translateMenu();
 
-    // Observe DOM changes to catch menu when it opens
+    // Re-run periodically to catch menu when it opens
     const observer = new MutationObserver(() => {
         translateMenu();
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 })();
 </script>
 """ % json.dumps(_menu_map, ensure_ascii=False)
 
-components.html(_js, height=0, width=0)
+st.html(_js)
 
 
 def main():

@@ -73,6 +73,8 @@ _menu_map = {
     "Report a bug": "报告问题" if _zh else "Report a bug",
     "Rerun": "重新运行" if _zh else "Rerun",
     "Record a screencast": "录制屏幕" if _zh else "Record a screencast",
+    "Clear cache": "清除缓存" if _zh else "Clear cache",
+    "Clear caches": "清除缓存" if _zh else "Clear caches",
     "Developer options": "开发者选项" if _zh else "Developer options",
 }
 
@@ -80,11 +82,11 @@ _js = """
 <script>
 (function() {
     const translations = %s;
+    const doc = window.parent.document || document;
 
     function translateMenu() {
-        // Walk all text nodes in the document
-        const walker = document.createTreeWalker(
-            document.body,
+        const walker = doc.createTreeWalker(
+            doc.body,
             NodeFilter.SHOW_TEXT,
             null,
             false
@@ -97,22 +99,22 @@ _js = """
                 toUpdate.push({node, value: translations[text]});
             }
         }
-        toUpdate.forEach(({node, value}) => {
-            node.textContent = value;
+        toUpdate.forEach(function(item) {
+            item.node.textContent = item.value;
         });
     }
 
     translateMenu();
 
-    const observer = new MutationObserver(() => {
+    const observer = new doc.defaultView.MutationObserver(function() {
         translateMenu();
     });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    observer.observe(doc.body, { childList: true, subtree: true, characterData: true });
 })();
 </script>
 """ % json.dumps(_menu_map, ensure_ascii=False)
 
-st.html(_js, unsafe_allow_javascript=True)
+components.html(_js, height=0, width=0)
 
 
 def main():

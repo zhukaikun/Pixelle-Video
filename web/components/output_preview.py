@@ -74,6 +74,16 @@ def render_single_output(pixelle_video, video_params):
         if st.button(tr("btn.generate"), type="primary", use_container_width=True):
             # Validate system configuration
             if not config_manager.validate():
+                if not config_manager.config.is_llm_configured():
+                    st.error(tr("settings.not_configured"))
+                    st.stop()
+                if not config_manager.config.is_custom_api_configured():
+                    st.error(
+                        "API 媒体模型未配置，请在系统配置中填写 API Key、Base URL 和模型名。"
+                        if get_language() == "zh_CN"
+                        else "API media model not configured. Please fill in API Key, Base URL, and model names in Settings."
+                    )
+                    st.stop()
                 st.error(tr("settings.not_configured"))
                 st.stop()
             
@@ -151,15 +161,10 @@ def render_single_output(pixelle_video, video_params):
                     "media_width": st.session_state.get('template_media_width'),
                     "media_height": st.session_state.get('template_media_height'),
                 }
-                # Add TTS parameters based on mode
-                video_params["tts_inference_mode"] = tts_mode
-                if tts_mode == "local":
-                    video_params["tts_voice"] = selected_voice
-                    video_params["tts_speed"] = tts_speed
-                else:  # comfyui
-                    video_params["tts_workflow"] = tts_workflow_key
-                    if ref_audio_path:
-                        video_params["ref_audio"] = str(ref_audio_path)
+                # Add TTS parameters (local mode only)
+                video_params["tts_inference_mode"] = "local"
+                video_params["tts_voice"] = selected_voice
+                video_params["tts_speed"] = tts_speed
                 
                 # Add custom template parameters if any
                 if custom_values_for_video:
@@ -269,21 +274,13 @@ def render_batch_output(pixelle_video, video_params):
                 "media_width": video_params.get("media_width"),
                 "media_height": video_params.get("media_height"),
             }
-            # Add TTS parameters based on mode (only add non-None values)
-            if shared_config["tts_inference_mode"] == "local":
-                tts_voice = video_params.get("tts_voice")
-                tts_speed = video_params.get("tts_speed")
-                if tts_voice:
-                    shared_config["tts_voice"] = tts_voice
-                if tts_speed:
-                    shared_config["tts_speed"] = tts_speed
-            else:  # comfyui
-                tts_workflow = video_params.get("tts_workflow")
-                if tts_workflow:
-                    shared_config["tts_workflow"] = tts_workflow
-                ref_audio = video_params.get("ref_audio")
-                if ref_audio:
-                    shared_config["ref_audio"] = str(ref_audio)
+            # Add TTS parameters (local mode only)
+            tts_voice = video_params.get("tts_voice")
+            tts_speed = video_params.get("tts_speed")
+            if tts_voice:
+                shared_config["tts_voice"] = tts_voice
+            if tts_speed:
+                shared_config["tts_speed"] = tts_speed
             
             # Add template parameters
             if video_params.get("template_params"):

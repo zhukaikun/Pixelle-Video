@@ -33,13 +33,6 @@ from web.components.header import render_header
 from web.i18n import tr
 from web.utils.async_helpers import run_async
 
-# Page config
-st.set_page_config(
-    page_title="History - Pixelle-Video",
-    page_icon="📚",
-    layout="wide",
-)
-
 
 def format_duration(seconds: float) -> str:
     """Format duration in seconds to readable string"""

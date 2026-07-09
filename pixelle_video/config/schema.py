@@ -142,10 +142,22 @@ class PixelleVideoConfig(BaseModel):
             self.llm.base_url and self.llm.base_url.strip() and
             self.llm.model and self.llm.model.strip()
         )
-    
+
+    def is_custom_api_configured(self) -> bool:
+        """Check if custom API media model is properly configured"""
+        custom = self.api_providers.custom
+        if not custom:
+            return False
+        return bool(
+            custom.api_key and custom.api_key.strip() and
+            custom.base_url and custom.base_url.strip() and
+            ((custom.video_models and custom.video_models.strip()) or
+             (custom.image_models and custom.image_models.strip()))
+        )
+
     def validate_required(self) -> bool:
         """Validate required configuration"""
-        return self.is_llm_configured()
+        return self.is_llm_configured() and self.is_custom_api_configured()
     
     def to_dict(self) -> dict:
         """Convert to dictionary (for backward compatibility)"""

@@ -24,8 +24,6 @@ def workflow_source_label(source: str) -> str:
     """Human-facing label for workflow source selectors."""
     zh = get_language() == "zh_CN"
     labels = {
-        "selfhost": "本地 ComfyUI" if zh else "Local ComfyUI",
-        "runninghub": "RunningHub",
         "api": "API 模型" if zh else "API models",
     }
     return labels.get(source, source)
@@ -38,13 +36,11 @@ def workflow_source_help(subject: str | None = None) -> str:
     if zh:
         return (
             f"选择{subject_text}使用的模型服务来源："
-            "RunningHub 使用云端工作流；本地 ComfyUI 使用 selfhost 工作流；"
-            "API 调用直接请求模型供应商。选择后，下方列表只显示该来源下可用的工作流或模型。"
+            "API 调用直接请求模型供应商。选择后，下方列表只显示该来源下可用的模型。"
         )
     return (
         f"Choose the model service source for {subject_text}: "
-        "RunningHub uses cloud workflows; Local ComfyUI uses selfhost workflows; "
-        "API call directly requests model providers. The list below only shows workflows or models from the selected source."
+        "API call directly requests model providers. The list below only shows models from the selected source."
     )
 
 

@@ -18,42 +18,122 @@ Uses st.navigation to define pages and set the default page to Home.
 """
 
 import sys
+import json
 from pathlib import Path
 
-# Add project root to sys.path for module imports
 _script_dir = Path(__file__).resolve().parent
 _project_root = _script_dir.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 import streamlit as st
+import streamlit.components.v1 as components
 
-# Setup page config (must be first Streamlit command)
+from web.i18n import get_language, set_language
+
+# Sync language from session state before anything else
+if "language" in st.session_state:
+    set_language(st.session_state["language"])
+
+_lang = get_language()
+_zh = _lang == "zh_CN"
+
 st.set_page_config(
-    page_title="Pixelle-Video - AI Video Generator",
+    page_title="Pixelle-Video - AI 视频生成器" if _zh else "Pixelle-Video - AI Video Generator",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="collapsed",
+    menu_items={
+        "About": "Pixelle-Video - AI 视频生成器" if _zh else "Pixelle-Video - AI Video Generator",
+        "Get Help": "https://github.com/ATH-MaaS/Pixelle-Video/issues",
+        "Report a Bug": "https://github.com/ATH-MaaS/Pixelle-Video/issues",
+    },
 )
+
+# Hide Deploy button
+st.markdown("""
+    <style>
+    [data-testid="stDeployButton"],
+    .stDeployButton,
+    div[data-testid="stDeployButton-Deployment"],
+    button[kind="header"],
+    a[href*="deploy"],
+    a[href*="streamlit.io/cloud"] {
+        display: none !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Translate built-in three-dot menu items via JS
+_menu_map = {
+    "Settings": "设置" if _zh else "Settings",
+    "Print": "打印" if _zh else "Print",
+    "About": "关于" if _zh else "About",
+    "Get help": "获取帮助" if _zh else "Get help",
+    "Report a Bug": "报告问题" if _zh else "Report a Bug",
+    "Report a bug": "报告问题" if _zh else "Report a bug",
+    "Reload": "重新加载" if _zh else "Reload",
+    "Fullscreen": "全屏" if _zh else "Fullscreen",
+    "Record a screencast": "录制屏幕" if _zh else "Record a screencast",
+    "Deploy": "部署" if _zh else "Deploy",
+}
+
+_js = """
+<script>
+(function() {
+    const translations = %s;
+
+    function translateMenu() {
+        // Target all menu items in dropdowns
+        const selectors = [
+            '[data-testid="stMainMenu"] [role="menuitem"]',
+            '[data-testid="stMainMenu"] a',
+            '[data-testid="stMainMenu"] button',
+            '[data-baseweb="menu"] [role="menuitem"]',
+            '[data-baseweb="menu"] li',
+            'header [role="menuitem"]',
+            'header a[role="menuitem"]',
+        ];
+        const items = document.querySelectorAll(selectors.join(', '));
+        items.forEach(item => {
+            const text = item.textContent.trim();
+            if (translations[text]) {
+                item.textContent = translations[text];
+            }
+        });
+    }
+
+    translateMenu();
+
+    // Observe DOM changes to catch menu when it opens
+    const observer = new MutationObserver(() => {
+        translateMenu();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+""" % json.dumps(_menu_map, ensure_ascii=False)
+
+components.html(_js, height=0, width=0)
 
 
 def main():
     """Main entry point with navigation"""
-    # Define pages using st.Page
+    zh = get_language() == "zh_CN"
+
     home_page = st.Page(
         "pages/1_🎬_Home.py",
-        title="Home",
+        title="首页" if zh else "Home",
         icon="🎬",
         default=True
     )
-    
+
     history_page = st.Page(
         "pages/2_📚_History.py",
-        title="History",
+        title="历史记录" if zh else "History",
         icon="📚"
     )
-    
-    # Set up navigation and run
+
     pg = st.navigation([home_page, history_page])
     pg.run()
 

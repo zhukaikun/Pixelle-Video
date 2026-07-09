@@ -28,8 +28,8 @@ def render_advanced_settings():
     
     # Expand if not configured, collapse if configured
     with st.expander(tr("settings.title"), expanded=not is_configured):
-        # 2-column layout: LLM | ComfyUI, followed by direct media API providers.
-        llm_col, comfyui_col = st.columns(2)
+        # 2-column layout: LLM | Custom API Media Model
+        llm_col, custom_media_col = st.columns(2)
         
         # ====================================================================
         # Column 1: LLM Settings
@@ -203,121 +203,27 @@ def render_advanced_settings():
                     llm_model = selected_model_option
         
         # ====================================================================
-        # Column 2: ComfyUI Settings
-        # ====================================================================
-        with comfyui_col:
-            with st.container(border=True):
-                st.markdown(f"**{tr('settings.comfyui.title')}**")
-                
-                # Get current configuration
-                comfyui_config = config_manager.get_comfyui_config()
-                
-                # Local/Self-hosted ComfyUI configuration
-                st.markdown(f"**{tr('settings.comfyui.local_title')}**")
-                url_col, key_col = st.columns(2)
-                with url_col:
-                    comfyui_url = st.text_input(
-                        tr("settings.comfyui.comfyui_url"),
-                        value=comfyui_config.get("comfyui_url", "http://127.0.0.1:8188"),
-                        help=tr("settings.comfyui.comfyui_url_help"),
-                        key="comfyui_url_input"
-                    )
-                with key_col:
-                    comfyui_api_key = st.text_input(
-                        tr("settings.comfyui.comfyui_api_key"),
-                        value=comfyui_config.get("comfyui_api_key", ""),
-                        type="password",
-                        help=tr("settings.comfyui.comfyui_api_key_help"),
-                        key="comfyui_api_key_input"
-                    )
-                
-                # Test connection button
-                if st.button(tr("btn.test_connection"), key="test_comfyui", use_container_width=True):
-                    try:
-                        import requests
-                        response = requests.get(f"{comfyui_url}/system_stats", timeout=5)
-                        if response.status_code == 200:
-                            st.success(tr("status.connection_success"))
-                        else:
-                            st.error(tr("status.connection_failed"))
-                    except Exception as e:
-                        st.error(f"{tr('status.connection_failed')}: {str(e)}")
-                
-                st.markdown("---")
-                
-                # RunningHub cloud configuration
-                st.markdown(f"**{tr('settings.comfyui.cloud_title')}**")
-                runninghub_api_key = st.text_input(
-                    tr("settings.comfyui.runninghub_api_key"),
-                    value=comfyui_config.get("runninghub_api_key", ""),
-                    type="password",
-                    help=tr("settings.comfyui.runninghub_api_key_help"),
-                    key="runninghub_api_key_input"
-                )
-                st.caption(
-                    f"{tr('settings.comfyui.runninghub_hint')} "
-                    f"[{tr('settings.comfyui.runninghub_get_api_key')}]"
-                    f"(https://www.runninghub{'.cn' if get_language() == 'zh_CN' else '.ai'}/?inviteCode=bozpdlbj)"
-                )
-                
-                # RunningHub concurrent limit and instance type (in one row)
-                limit_col, instance_col = st.columns(2)
-                with limit_col:
-                    runninghub_concurrent_limit = st.number_input(
-                        tr("settings.comfyui.runninghub_concurrent_limit"),
-                        min_value=1,
-                        max_value=10,
-                        value=comfyui_config.get("runninghub_concurrent_limit", 1),
-                        help=tr("settings.comfyui.runninghub_concurrent_limit_help"),
-                        key="runninghub_concurrent_limit_input"
-                    )
-                with instance_col:
-                    # Check if instance type is "plus" (48G VRAM enabled)
-                    current_instance_type = comfyui_config.get("runninghub_instance_type") or ""
-                    is_plus_enabled = current_instance_type == "plus"
-                    # Instance type options with i18n
-                    instance_options = [
-                        tr("settings.comfyui.runninghub_instance_24g"),
-                        tr("settings.comfyui.runninghub_instance_48g"),
-                    ]
-                    runninghub_instance_type_display = st.selectbox(
-                        tr("settings.comfyui.runninghub_instance_type"),
-                        options=instance_options,
-                        index=1 if is_plus_enabled else 0,
-                        help=tr("settings.comfyui.runninghub_instance_type_help"),
-                        key="runninghub_instance_type_input"
-                    )
-                    # Convert display value back to actual value
-                    runninghub_48g_enabled = runninghub_instance_type_display == tr("settings.comfyui.runninghub_instance_48g")
-
-        # ====================================================================
-        # Direct API media providers
+        # Column 2: Custom API Media Model Settings
         # ====================================================================
         zh = get_language() == "zh_CN"
         api_cfg = config_manager.get_api_providers_config()
         common_cfg = api_cfg.get("common", {})
-        openai_cfg = api_cfg.get("openai", {})
-        dashscope_cfg = api_cfg.get("dashscope", {})
-        ark_cfg = api_cfg.get("ark", {})
-        kling_cfg = api_cfg.get("kling", {})
         custom_cfg = api_cfg.get("custom", {})
-        default_api_base_urls = {
-            "openai": "https://api.openai.com/v1",
-            "dashscope": "https://dashscope.aliyuncs.com/api/v1",
-            "ark": "https://ark.cn-beijing.volces.com/api/v3",
-            "kling": "https://api-beijing.klingai.com",
-        }
 
-        with st.container(border=True):
-            st.markdown("**🧩 API 媒体模型**" if zh else "**🧩 API Media Models**")
-            st.caption(
-                "用于直连图像/视频模型，不影响上方 LLM 与 ComfyUI/RunningHub 配置。"
-                if zh
-                else "Used for direct image/video model calls. This does not affect the LLM or ComfyUI/RunningHub settings above."
-            )
+        with custom_media_col:
+            with st.container(border=True):
+                st.markdown(
+                    "**🔀 API 媒体模型（第三方中转）**" if zh
+                    else "**🔀 API Media Models (Relay)**"
+                )
+                st.caption(
+                    "用于通过第三方中转服务（如 new-api）调用图像/视频生成模型。"
+                    "配置中转地址和 API Key 后，在媒体生成中选择 api/custom/ 开头的模型即可。"
+                    if zh
+                    else "For image/video generation via third-party relay services (e.g. new-api). "
+                    "Configure the relay base URL and API key, then select api/custom/ models in the media workflow."
+                )
 
-            common_col, proxy_col = st.columns(2)
-            with common_col:
                 api_print_model_input = st.checkbox(
                     "打印模型请求参数" if zh else "Print model request parameters",
                     value=bool(common_cfg.get("print_model_input", False)),
@@ -328,136 +234,20 @@ def render_advanced_settings():
                     ),
                     key="api_media_print_model_input",
                 )
-            with proxy_col:
-                api_local_proxy = st.text_input(
-                    "本地代理（可选）" if zh else "Local proxy (optional)",
-                    value=common_cfg.get("local_proxy", ""),
-                    placeholder="http://127.0.0.1:9090",
-                    help=(
-                        "仅部分提供商会使用，例如 OpenAI 图像模型。留空表示不使用代理。"
-                        if zh
-                        else "Only used by some providers, such as OpenAI image models. Leave blank to disable."
-                    ),
-                    key="api_media_local_proxy",
-                )
 
-            st.markdown("---")
+                st.markdown("---")
 
-            provider_col1, provider_col2 = st.columns(2)
-            with provider_col1:
-                st.markdown("**OpenAI / GPT Image**")
-                api_openai_use_proxy = st.checkbox(
-                    "OpenAI 启用代理" if zh else "Use proxy for OpenAI",
-                    value=bool(openai_cfg.get("use_proxy", False)),
-                    key="api_media_openai_use_proxy",
-                )
-                api_openai_key = st.text_input(
-                    "OpenAI API Key",
-                    value=openai_cfg.get("api_key", ""),
-                    type="password",
-                    key="api_media_openai_key",
-                )
-                api_openai_base_url = st.text_input(
-                    "OpenAI Base URL",
-                    value=openai_cfg.get("base_url") or default_api_base_urls["openai"],
-                    placeholder="https://api.openai.com/v1",
-                    key="api_media_openai_base_url",
-                )
-
-                st.markdown("**DashScope / Wan / HappyHorse**")
-                api_dashscope_use_proxy = st.checkbox(
-                    "DashScope 启用代理" if zh else "Use proxy for DashScope",
-                    value=bool(dashscope_cfg.get("use_proxy", False)),
-                    key="api_media_dashscope_use_proxy",
-                )
-                api_dashscope_key = st.text_input(
-                    "DashScope API Key",
-                    value=dashscope_cfg.get("api_key", ""),
-                    type="password",
-                    key="api_media_dashscope_key",
-                )
-                api_dashscope_base_url = st.text_input(
-                    "DashScope Base URL",
-                    value=dashscope_cfg.get("base_url") or default_api_base_urls["dashscope"],
-                    placeholder="https://dashscope.aliyuncs.com/api/v1",
-                    key="api_media_dashscope_base_url",
-                )
-
-            with provider_col2:
-                st.markdown("**Volcengine ARK / Seedream / Seedance**")
-                api_ark_use_proxy = st.checkbox(
-                    "ARK 启用代理" if zh else "Use proxy for ARK",
-                    value=bool(ark_cfg.get("use_proxy", False)),
-                    key="api_media_ark_use_proxy",
-                )
-                api_ark_key = st.text_input(
-                    "ARK API Key",
-                    value=ark_cfg.get("api_key", ""),
-                    type="password",
-                    key="api_media_ark_key",
-                )
-                api_ark_base_url = st.text_input(
-                    "ARK Base URL",
-                    value=ark_cfg.get("base_url") or default_api_base_urls["ark"],
-                    placeholder="https://ark.cn-beijing.volces.com/api/v3",
-                    key="api_media_ark_base_url",
-                )
-
-                st.markdown("**Kling AI / 可灵**")
-                api_kling_use_proxy = st.checkbox(
-                    "Kling 启用代理" if zh else "Use proxy for Kling",
-                    value=bool(kling_cfg.get("use_proxy", False)),
-                    key="api_media_kling_use_proxy",
-                )
-                api_kling_base_url = st.text_input(
-                    "Kling Base URL",
-                    value=kling_cfg.get("base_url") or default_api_base_urls["kling"],
-                    placeholder="https://api-beijing.klingai.com",
-                    key="api_media_kling_base_url",
-                )
-                api_kling_access_key = st.text_input(
-                    "Kling Access Key",
-                    value=kling_cfg.get("access_key", ""),
-                    type="password",
-                    key="api_media_kling_access_key",
-                )
-                api_kling_secret_key = st.text_input(
-                    "Kling Secret Key",
-                    value=kling_cfg.get("secret_key", ""),
-                    type="password",
-                    key="api_media_kling_secret_key",
-                )
-
-            st.markdown("---")
-
-            with st.container(border=True):
-                st.markdown(
-                    "**🔀 Custom Model (第三方中转)**" if zh
-                    else "**🔀 Custom Model (Relay)**"
-                )
-                st.caption(
-                    "用于通过第三方中转服务（如 new-api）调用图像/视频生成模型。"
-                    "配置中转地址和 API Key 后，在媒体生成中选择 api/custom/ 开头的模型即可。"
-                    if zh
-                    else "For image/video generation via third-party relay services (e.g. new-api). "
-                    "Configure the relay base URL and API key, then select api/custom/ models in the media workflow."
-                )
-                custom_col1, custom_col2 = st.columns(2)
-                with custom_col1:
-                    api_custom_use_proxy = st.checkbox(
-                        "Custom 启用代理" if zh else "Use proxy for Custom",
-                        value=bool(custom_cfg.get("use_proxy", False)),
-                        key="api_media_custom_use_proxy",
-                    )
+                c_key_col, c_url_col = st.columns(2)
+                with c_key_col:
                     api_custom_key = st.text_input(
-                        "Custom API Key" if zh else "Custom API Key",
+                        "API Key *",
                         value=custom_cfg.get("api_key", ""),
                         type="password",
                         key="api_media_custom_key",
                     )
-                with custom_col2:
+                with c_url_col:
                     api_custom_base_url = st.text_input(
-                        "Custom Base URL" if zh else "Custom Base URL",
+                        "Base URL *",
                         value=custom_cfg.get("base_url", ""),
                         placeholder="http://localhost:3000/v1",
                         key="api_media_custom_base_url",
@@ -504,54 +294,38 @@ def render_advanced_settings():
                         st.error(tr("status.llm_config_incomplete"))
                     else:
                         config_manager.set_llm_config(llm_api_key, llm_base_url, llm_model)
-                    
-                    # Save ComfyUI configuration (optional fields, always save what's provided)
-                    # Convert checkbox to instance type: True -> "plus", False -> ""
-                    instance_type = "plus" if runninghub_48g_enabled else ""
-                    config_manager.set_comfyui_config(
-                        comfyui_url=comfyui_url if comfyui_url else None,
-                        comfyui_api_key=comfyui_api_key if comfyui_api_key else None,
-                        runninghub_api_key=runninghub_api_key if runninghub_api_key else None,
-                        runninghub_concurrent_limit=int(runninghub_concurrent_limit),
-                        runninghub_instance_type=instance_type
-                    )
 
-                    # Save direct image/video API provider configuration.
+                    # Save API media provider configuration.
                     config_manager.set_api_provider_config("common", {
                         "print_model_input": bool(api_print_model_input),
-                        "local_proxy": api_local_proxy or "",
                     })
-                    config_manager.set_api_provider_config("openai", {
-                        "api_key": api_openai_key or "",
-                        "base_url": api_openai_base_url or "",
-                        "use_proxy": bool(api_openai_use_proxy),
-                    })
-                    config_manager.set_api_provider_config("dashscope", {
-                        "api_key": api_dashscope_key or "",
-                        "base_url": api_dashscope_base_url or "",
-                        "use_proxy": bool(api_dashscope_use_proxy),
-                    })
-                    config_manager.set_api_provider_config("ark", {
-                        "api_key": api_ark_key or "",
-                        "base_url": api_ark_base_url or "",
-                        "use_proxy": bool(api_ark_use_proxy),
-                    })
-                    config_manager.set_api_provider_config("kling", {
-                        "base_url": api_kling_base_url or "",
-                        "access_key": api_kling_access_key or "",
-                        "secret_key": api_kling_secret_key or "",
-                        "use_proxy": bool(api_kling_use_proxy),
-                    })
-                    config_manager.set_api_provider_config("custom", {
-                        "api_key": api_custom_key or "",
-                        "base_url": api_custom_base_url or "",
-                        "use_proxy": bool(api_custom_use_proxy),
-                        "video_models": api_custom_video_models or "",
-                        "image_models": api_custom_image_models or "",
-                    })
+
+                    # Validate custom API media model configuration (required)
+                    custom_errors = []
+                    if not api_custom_key:
+                        custom_errors.append("API Key" if not zh else "API Key")
+                    if not api_custom_base_url:
+                        custom_errors.append("Base URL" if not zh else "Base URL")
+                    if not api_custom_video_models and not api_custom_image_models:
+                        custom_errors.append(
+                            "视频模型名或图片模型名（至少填一项）" if zh
+                            else "Video model names or Image model names (at least one)"
+                        )
+                    if custom_errors:
+                        st.error(
+                            f"API 媒体模型配置不完整，请填写：{', '.join(custom_errors)}" if zh
+                            else f"API media model configuration incomplete, please fill: {', '.join(custom_errors)}"
+                        )
+                    else:
+                        config_manager.set_api_provider_config("custom", {
+                            "api_key": api_custom_key or "",
+                            "base_url": api_custom_base_url or "",
+                            "video_models": api_custom_video_models or "",
+                            "image_models": api_custom_image_models or "",
+                        })
                     
-                    # Only save to file if LLM config is valid
-                    if llm_api_key and llm_base_url and llm_model:
+                    # Only save to file if LLM and custom config are valid
+                    if llm_api_key and llm_base_url and llm_model and not custom_errors:
                         config_manager.save()
                         st.success(tr("status.config_saved"))
                         safe_rerun()

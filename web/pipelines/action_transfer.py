@@ -203,10 +203,6 @@ class ActionTransferPipelineUI(PipelineUI):
                         )
 
             source_options = []
-            if list_local_media_workflows(pixelle_video, "video", "runninghub", key_prefix="af_"):
-                source_options.append("runninghub")
-            if list_local_media_workflows(pixelle_video, "video", "selfhost", key_prefix="af_"):
-                source_options.append("selfhost")
             if list_api_media_workflows(
                 pixelle_video,
                 "video",
@@ -216,11 +212,11 @@ class ActionTransferPipelineUI(PipelineUI):
                 source_options.append("api")
 
             if not source_options:
-                source_options = ["runninghub"]
+                source_options = ["api"]
                 st.warning(
-                    "没有找到可用的动作迁移工作流或 API 模型。"
+                    "没有找到可用的动作迁移 API 模型。"
                     if get_language() == "zh_CN"
-                    else "No available action-transfer workflow or API model was found."
+                    else "No available action-transfer API model was found."
                 )
 
             source_key = "action_transfer_workflow_source"
@@ -237,12 +233,6 @@ class ActionTransferPipelineUI(PipelineUI):
             )
             
             transfer_workflows = list_action_transfer_workflows()
-            if workflow_source != "api" and not transfer_workflows:
-                st.warning(
-                    "当前来源下没有动作迁移工作流（需要 af_*.json）。"
-                    if get_language() == "zh_CN"
-                    else "No action-transfer workflow is available for this source (requires af_*.json)."
-                )
             if workflow_source == "api" and not transfer_workflows:
                 st.caption(
                     "当前已接入的 API 视频模型没有已验证的动作迁移数据契约，暂不展示 API 模型。"
@@ -341,6 +331,16 @@ class ActionTransferPipelineUI(PipelineUI):
             # Generate button
             if st.button(tr("btn.generate"), type="primary", use_container_width=True, key="transfer_generate"):
                 if not config_manager.validate():
+                    if not config_manager.config.is_llm_configured():
+                        st.error(tr("settings.not_configured"))
+                        st.stop()
+                    if not config_manager.config.is_custom_api_configured():
+                        st.error(
+                            "API 媒体模型未配置，请在系统配置中填写 API Key、Base URL 和模型名。"
+                            if get_language() == "zh_CN"
+                            else "API media model not configured. Please fill in API Key, Base URL, and model names in Settings."
+                        )
+                        st.stop()
                     st.error(tr("settings.not_configured"))
                     st.stop()
                 

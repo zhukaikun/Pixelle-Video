@@ -381,18 +381,7 @@ class APIProviderMediaService:
 
     def list_workflows(self) -> list[dict]:
         """Return API models in the same shape as Comfy workflow metadata."""
-        workflows = []
-
-        for provider, models in self.IMAGE_MODELS.items():
-            for model in models:
-                workflows.append(self._workflow_info(provider, model, "image"))
-
-        for provider, models in self.VIDEO_MODELS.items():
-            for model in models:
-                workflows.append(self._workflow_info(provider, model, "video"))
-
-        workflows.extend(self._list_custom_workflows())
-
+        workflows = self._list_custom_workflows()
         return workflows
 
     def _list_custom_workflows(self) -> list[dict]:
@@ -432,7 +421,7 @@ class APIProviderMediaService:
             capabilities = {
                 "ability_type": "text_to_video",
                 "ability_types": ["text_to_video", "image_to_video"],
-                "adapter_ability_types": ["text_to_video", "first_frame_i2v", "native_audio"],
+                "adapter_ability_types": ["text_to_video", "first_frame_i2v", "native_audio", "digital_human"],
                 "input_modalities": ["text", "image"],
                 "adapter_input_modalities": ["text", "image"],
                 "duration": {"min": 2, "max": 15, "integer": True, "verified": True},
@@ -837,7 +826,7 @@ class APIProviderMediaService:
             return {
                 "ability_type": "text_to_video",
                 "ability_types": ["text_to_video", "image_to_video"],
-                "adapter_ability_types": ["text_to_video", "first_frame_i2v", "native_audio"],
+                "adapter_ability_types": ["text_to_video", "first_frame_i2v", "native_audio", "digital_human"],
                 "input_modalities": ["text", "image"],
                 "adapter_input_modalities": ["text", "image"],
                 "api_contract_verified": True,

@@ -137,15 +137,8 @@ class DigitalHumanPipelineUI(PipelineUI):
                 st.markdown(tr("asset_based.source.how"))
             
             source_options = {
-                "runninghub": tr("asset_based.source.runninghub"),
-                "selfhost": tr("asset_based.source.selfhost"),
                 "api": workflow_source_label("api"),
             }
-            
-            # Check if RunningHub API key is configured
-            comfyui_config = config_manager.get_comfyui_config()
-            has_runninghub = bool(comfyui_config.get("runninghub_api_key"))
-            has_selfhost = bool(comfyui_config.get("comfyui_url"))
             
             workflow_config = {
                 "first_workflow_path": "workflows/runninghub/digital_image.json",
@@ -181,10 +174,6 @@ class DigitalHumanPipelineUI(PipelineUI):
 
             api_image_workflows = list_api_media_workflows(pixelle_video, "image")
             image_source_options = []
-            if digital_image_workflows("runninghub"):
-                image_source_options.append("runninghub")
-            if digital_image_workflows("selfhost"):
-                image_source_options.append("selfhost")
             if api_image_workflows:
                 image_source_options.append("api")
 
@@ -201,22 +190,15 @@ class DigitalHumanPipelineUI(PipelineUI):
             )
 
             image_workflows = []
-            if image_service_source in {"runninghub", "selfhost"}:
-                if image_service_source == "runninghub" and not has_runninghub:
-                    st.warning(tr("asset_based.source.runninghub_not_configured"))
-                if image_service_source == "selfhost" and not has_selfhost:
-                    st.warning(tr("asset_based.source.selfhost_not_configured"))
+            if image_service_source == "api":
+                image_workflows = api_image_workflows
 
-                image_workflows = digital_image_workflows(image_service_source)
-            elif image_service_source == "api":
-                if not api_image_workflows:
+            if not api_image_workflows:
                     st.warning(
                         "没有找到 API 图片模型，请先配置图像模型提供商。"
                         if get_language() == "zh_CN"
                         else "No API image model found. Configure an image provider first."
                     )
-                else:
-                    image_workflows = api_image_workflows
 
             image_options = [wf["display_name"] for wf in image_workflows]
             selected_image_workflow = st.selectbox(
@@ -232,9 +214,6 @@ class DigitalHumanPipelineUI(PipelineUI):
                 selected_workflow = image_workflows[selected_index]
                 if image_service_source == "api":
                     workflow_config["api_image_workflow"] = selected_workflow["key"]
-                else:
-                    workflow_config["first_workflow_path"] = selected_workflow["first_workflow_path"]
-                    workflow_config["third_workflow_path"] = selected_workflow["third_workflow_path"]
 
             workflow_config["api_video_workflow"] = None
             workflow_config["api_video_params"] = {}
@@ -245,10 +224,6 @@ class DigitalHumanPipelineUI(PipelineUI):
                 verified_only=True,
             )
             video_source_options = []
-            if digital_video_workflows("runninghub"):
-                video_source_options.append("runninghub")
-            if digital_video_workflows("selfhost"):
-                video_source_options.append("selfhost")
             if api_video_workflows:
                 video_source_options.append("api")
 
@@ -264,17 +239,10 @@ class DigitalHumanPipelineUI(PipelineUI):
             )
 
             video_workflows = []
-            if video_service_source in {"runninghub", "selfhost"}:
-                if video_service_source == "runninghub" and not has_runninghub:
-                    st.warning(tr("asset_based.source.runninghub_not_configured"))
-                if video_service_source == "selfhost" and not has_selfhost:
-                    st.warning(tr("asset_based.source.selfhost_not_configured"))
-
-                video_workflows = digital_video_workflows(video_service_source)
-            elif video_service_source == "api":
+            if video_service_source == "api":
                 if not api_video_workflows:
                     st.warning(
-                        "没有找到已验证的 API 参考生视频模型，请先配置 DashScope 等提供商。"
+                        "没有找到已验证的 API 参考生视频模型，请先配置提供商。"
                         if get_language() == "zh_CN"
                         else "No verified API reference-to-video model found. Configure a provider first."
                     )
@@ -300,8 +268,6 @@ class DigitalHumanPipelineUI(PipelineUI):
                         key_prefix="digital_human",
                         default_duration=5,
                     )
-                else:
-                    workflow_config["second_workflow_path"] = selected_workflow["second_workflow_path"]
 
             missing_workflows = [
                 path for key, path in workflow_config.items()
@@ -497,6 +463,16 @@ class DigitalHumanPipelineUI(PipelineUI):
             if st.button(tr("btn.generate"), type="primary", use_container_width=True, key="digital_human_generate"):
                 # Validate
                 if not config_manager.validate():
+                    if not config_manager.config.is_llm_configured():
+                        st.error(tr("settings.not_configured"))
+                        st.stop()
+                    if not config_manager.config.is_custom_api_configured():
+                        st.error(
+                            "API 媒体模型未配置，请在系统配置中填写 API Key、Base URL 和模型名。"
+                            if get_language() == "zh_CN"
+                            else "API media model not configured. Please fill in API Key, Base URL, and model names in Settings."
+                        )
+                        st.stop()
                     st.error(tr("settings.not_configured"))
                     st.stop()
                 

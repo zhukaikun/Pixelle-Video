@@ -133,10 +133,6 @@ class ImageToVideoPipelineUI(PipelineUI):
                         )
 
             source_options = []
-            if list_local_media_workflows(pixelle_video, "video", "runninghub", key_prefix="i2v_"):
-                source_options.append("runninghub")
-            if list_local_media_workflows(pixelle_video, "video", "selfhost", key_prefix="i2v_"):
-                source_options.append("selfhost")
             if list_api_media_workflows(
                 pixelle_video,
                 "video",
@@ -146,11 +142,11 @@ class ImageToVideoPipelineUI(PipelineUI):
                 source_options.append("api")
 
             if not source_options:
-                source_options = ["runninghub"]
+                source_options = ["api"]
                 st.warning(
-                    "没有找到可用的图生视频工作流或 API 模型。"
+                    "没有找到可用的图生视频 API 模型。"
                     if get_language() == "zh_CN"
-                    else "No available image-to-video workflow or API model was found."
+                    else "No available image-to-video API model was found."
                 )
 
             source_key = "i2v_workflow_source"
@@ -167,12 +163,6 @@ class ImageToVideoPipelineUI(PipelineUI):
             )
             
             i2v_workflows = list_i2v_workflows()
-            if workflow_source != "api" and not i2v_workflows:
-                st.warning(
-                    "当前来源下没有图生视频工作流（需要 i2v_*.json）。"
-                    if get_language() == "zh_CN"
-                    else "No image-to-video workflow is available for this source (requires i2v_*.json)."
-                )
             workflow_options = [wf["display_name"] for wf in i2v_workflows] 
             workflow_keys = [wf["key"] for wf in i2v_workflows]               
             default_workflow_index = 0
@@ -252,6 +242,16 @@ class ImageToVideoPipelineUI(PipelineUI):
             # Generate button
             if st.button(tr("btn.generate"), type="primary", use_container_width=True, key="i2v_generate"):
                 if not config_manager.validate():
+                    if not config_manager.config.is_llm_configured():
+                        st.error(tr("settings.not_configured"))
+                        st.stop()
+                    if not config_manager.config.is_custom_api_configured():
+                        st.error(
+                            "API 媒体模型未配置，请在系统配置中填写 API Key、Base URL 和模型名。"
+                            if get_language() == "zh_CN"
+                            else "API media model not configured. Please fill in API Key, Base URL, and model names in Settings."
+                        )
+                        st.stop()
                     st.error(tr("settings.not_configured"))
                     st.stop()
                 

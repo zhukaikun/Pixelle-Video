@@ -194,21 +194,16 @@ class AssetBasedPipelineUI(PipelineUI):
                 st.markdown(tr("asset_based.source.how"))
             
             source_options = {
-                "runninghub": tr("asset_based.source.runninghub"),
-                "selfhost": tr("asset_based.source.selfhost"),
                 "api": "API 调用" if get_language() == "zh_CN" else "API call",
             }
             
-            # Check if RunningHub API key is configured
-            comfyui_config = config_manager.get_comfyui_config()
+            # Check if API VLM is configured
             api_asset_analysis = getattr(pixelle_video, "api_asset_analysis", None)
             api_vlm_models = (
                 api_asset_analysis.list_models(configured_only=True)
                 if api_asset_analysis is not None
                 else []
             )
-            has_runninghub = bool(comfyui_config.get("runninghub_api_key"))
-            has_selfhost = bool(comfyui_config.get("comfyui_url"))
             has_api_analysis = bool(api_vlm_models)
 
             asset_paths = (asset_params or {}).get("assets") or []
@@ -217,33 +212,15 @@ class AssetBasedPipelineUI(PipelineUI):
             has_image_assets = any(Path(path).suffix.lower() in image_exts for path in asset_paths)
             has_video_assets = any(Path(path).suffix.lower() in video_exts for path in asset_paths)
 
-            def analysis_source_available(source_name: str) -> bool:
-                source_dir = Path("workflows") / source_name
-                image_available = (source_dir / "analyse_image.json").exists()
-                video_available = (source_dir / "analyse_video.json").exists()
-                if has_image_assets and not image_available:
-                    return False
-                if has_video_assets and not video_available:
-                    return False
-                return image_available or video_available
-            
-            # Prefer API VLM when configured, so API media workflows do not depend on RunningHub.
+            # Prefer API VLM when configured
             source_keys = []
-            if analysis_source_available("runninghub"):
-                source_keys.append("runninghub")
-            if analysis_source_available("selfhost"):
-                source_keys.append("selfhost")
             if has_api_analysis:
                 source_keys.append("api")
             if not source_keys:
-                source_keys = ["runninghub"]
+                source_keys = ["api"]
 
             if has_api_analysis and "api" in source_keys:
                 default_source = "api"
-            elif has_runninghub and "runninghub" in source_keys:
-                default_source = "runninghub"
-            elif "selfhost" in source_keys:
-                default_source = "selfhost"
             else:
                 default_source = source_keys[0]
             default_source_index = source_keys.index(default_source)
@@ -331,27 +308,10 @@ class AssetBasedPipelineUI(PipelineUI):
                     )
                 else:
                     st.info(
-                        "使用上方选择的 API VLM 模型分析上传素材，不依赖 RunningHub/ComfyUI。"
+                        "使用上方选择的 API VLM 模型分析上传素材。"
                         if get_language() == "zh_CN"
-                        else "Use the selected API VLM model to analyze uploaded assets without RunningHub/ComfyUI."
+                        else "Use the selected API VLM model to analyze uploaded assets."
                     )
-            elif source == "runninghub":
-                if not has_runninghub:
-                    st.warning(tr("asset_based.source.runninghub_not_configured"))
-                else:
-                    st.info(tr("asset_based.source.runninghub_hint"))
-            else:
-                if not has_selfhost:
-                    st.warning(tr("asset_based.source.selfhost_not_configured"))
-                else:
-                    st.info(tr("asset_based.source.selfhost_hint"))
-                    # Check and warn for selfhost mode (auto popup if not confirmed)
-                    workflow_for_warning = (
-                        selected_analysis_workflow.get("image_workflow")
-                        or selected_analysis_workflow.get("video_workflow")
-                    )
-                    if workflow_for_warning:
-                        check_and_warn_selfhost_workflow(workflow_for_warning)
 
             api_video_workflow = None
             api_video_params = {}
@@ -501,6 +461,16 @@ class AssetBasedPipelineUI(PipelineUI):
             if st.button(tr("btn.generate"), type="primary", use_container_width=True, key="asset_generate"):
                 # Validate
                 if not config_manager.validate():
+                    if not config_manager.config.is_llm_configured():
+                        st.error(tr("settings.not_configured"))
+                        st.stop()
+                    if not config_manager.config.is_custom_api_configured():
+                        st.error(
+                            "API 媒体模型未配置，请在系统配置中填写 API Key、Base URL 和模型名。"
+                            if get_language() == "zh_CN"
+                            else "API media model not configured. Please fill in API Key, Base URL, and model names in Settings."
+                        )
+                        st.stop()
                     st.error(tr("settings.not_configured"))
                     st.stop()
                 

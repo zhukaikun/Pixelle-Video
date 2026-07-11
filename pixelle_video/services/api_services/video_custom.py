@@ -99,23 +99,23 @@ class CustomVideoClient:
     def _submit_task(self, prompt: str, image_path: Optional[str], model: str, duration: int, **kwargs) -> str:
         url = f"{self.base_url}/v1/videos"
 
-        form_data = {
+        payload = {
             "model": model,
             "prompt": prompt,
-            "duration": str(duration),
+            "duration": duration,
         }
 
         video_ratio = kwargs.get("video_ratio") or kwargs.get("ratio")
         if video_ratio:
-            form_data["size"] = video_ratio
+            payload["size"] = video_ratio
 
         resolution = kwargs.get("resolution")
         if resolution:
             width, height = self._resolution_to_dimensions(resolution, video_ratio)
             if width:
-                form_data["width"] = str(width)
+                payload["width"] = width
             if height:
-                form_data["height"] = str(height)
+                payload["height"] = height
 
         if image_path:
             if not os.path.exists(image_path):
@@ -124,25 +124,27 @@ class CustomVideoClient:
                 img_data = base64.b64encode(f.read()).decode("utf-8")
             ext = os.path.splitext(image_path)[1].lower()
             mime = "image/png" if ext == ".png" else "image/jpeg"
-            form_data["image"] = f"data:{mime};base64,{img_data}"
+            payload["image"] = f"data:{mime};base64,{img_data}"
 
         for key in ["seed", "n", "fps", "response_format", "user"]:
             if key in kwargs and kwargs[key] is not None:
-                form_data[key] = str(kwargs[key])
+                payload[key] = kwargs[key]
 
         metadata = {}
         for key in ["negative_prompt", "style", "quality_level", "watermark", "generate_audio"]:
             if key in kwargs and kwargs[key] is not None:
                 metadata[key] = kwargs[key]
         if metadata:
-            import json
-            form_data["metadata"] = json.dumps(metadata)
+            payload["metadata"] = metadata
 
-        logger.info(f"CustomVideoClient: submitting task model={model}, duration={duration}s")
+        headers = self._headers()
+        headers["Content-Type"] = "application/json"
+
+        logger.info(f"CustomVideoClient: submitting task model={model}, duration={duration}s, payload={payload}")
         resp = requests.post(
             url,
-            headers=self._headers(),
-            data=form_data,
+            headers=headers,
+            json=payload,
             timeout=self.timeout,
             proxies=self._proxies(),
         )

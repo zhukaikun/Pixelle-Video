@@ -108,14 +108,6 @@ class CustomVideoClient:
         if video_ratio:
             payload["size"] = video_ratio
 
-        resolution = kwargs.get("resolution")
-        if resolution:
-            width, height = self._resolution_to_dimensions(resolution, video_ratio)
-            if width:
-                payload["width"] = width
-            if height:
-                payload["height"] = height
-
         if image_path:
             if not os.path.exists(image_path):
                 raise FileNotFoundError(f"Input image not found: {image_path}")
@@ -130,6 +122,13 @@ class CustomVideoClient:
                 payload[key] = kwargs[key]
 
         metadata = {"duration": duration}
+        resolution = kwargs.get("resolution")
+        if resolution:
+            width, height = self._resolution_to_dimensions(resolution, video_ratio)
+            if width:
+                metadata["width"] = width
+            if height:
+                metadata["height"] = height
         for key in ["negative_prompt", "style", "quality_level", "watermark", "generate_audio"]:
             if key in kwargs and kwargs[key] is not None:
                 metadata[key] = kwargs[key]

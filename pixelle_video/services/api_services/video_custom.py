@@ -102,7 +102,6 @@ class CustomVideoClient:
         payload = {
             "model": model,
             "prompt": prompt,
-            "duration": duration,
         }
 
         video_ratio = kwargs.get("video_ratio") or kwargs.get("ratio")
@@ -130,12 +129,11 @@ class CustomVideoClient:
             if key in kwargs and kwargs[key] is not None:
                 payload[key] = kwargs[key]
 
-        metadata = {}
+        metadata = {"duration": duration}
         for key in ["negative_prompt", "style", "quality_level", "watermark", "generate_audio"]:
             if key in kwargs and kwargs[key] is not None:
                 metadata[key] = kwargs[key]
-        if metadata:
-            payload["metadata"] = metadata
+        payload["metadata"] = metadata
 
         headers = self._headers()
         headers["Content-Type"] = "application/json"

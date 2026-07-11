@@ -104,10 +104,6 @@ class CustomVideoClient:
             "prompt": prompt,
         }
 
-        video_ratio = kwargs.get("video_ratio") or kwargs.get("ratio")
-        if video_ratio:
-            payload["size"] = video_ratio
-
         if image_path:
             if not os.path.exists(image_path):
                 raise FileNotFoundError(f"Input image not found: {image_path}")
@@ -117,21 +113,20 @@ class CustomVideoClient:
             mime = "image/png" if ext == ".png" else "image/jpeg"
             payload["image"] = f"data:{mime};base64,{img_data}"
 
-        for key in ["seed", "n", "fps", "response_format", "user"]:
-            if key in kwargs and kwargs[key] is not None:
-                payload[key] = kwargs[key]
-
         metadata = {"duration": duration}
+
+        video_ratio = kwargs.get("video_ratio") or kwargs.get("ratio")
+        if video_ratio:
+            metadata["ratio"] = video_ratio
+
         resolution = kwargs.get("resolution")
         if resolution:
-            width, height = self._resolution_to_dimensions(resolution, video_ratio)
-            if width:
-                metadata["width"] = width
-            if height:
-                metadata["height"] = height
-        for key in ["negative_prompt", "style", "quality_level", "watermark", "generate_audio"]:
+            metadata["resolution"] = resolution
+
+        for key in ["seed", "watermark", "generate_audio", "negative_prompt", "style", "quality_level"]:
             if key in kwargs and kwargs[key] is not None:
                 metadata[key] = kwargs[key]
+
         payload["metadata"] = metadata
 
         headers = self._headers()
